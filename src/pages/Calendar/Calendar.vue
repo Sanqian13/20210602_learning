@@ -13,7 +13,7 @@
       <ul class="date">
         <li class="day" v-for="(week, index) in weeks" :key="index">{{week}}</li>
       </ul>
-      <div class="swiper-container" id="swiper1" v-if="months.length">
+      <div class="swiper-container" id="swiper1" v-if="months.length && !showYear">
         <div class="swiper-wrapper">
           <div class="swiper-slide" v-for="(month, index) in months" :key="index">
             <div class="day" v-for="(day, index) in month"
@@ -29,7 +29,7 @@
       </div>
     </div>
     <div class="calendar-year" v-if="showYear">
-      <div class="swiper-container" id="swiper2" v-if="years.length">
+      <div class="swiper-container" id="swiper2" v-if="years.length && showYear">
         <div class="swiper-wrapper">
           <div class="swiper-slide" v-for="(year, index) in years" :key="index">
             <div class="month"
@@ -68,15 +68,13 @@ export default {
       swiperOption: {
         observer: true,
         autoHeight: true, // 高度随内容变化
-        loop: true, // 开启循环首位相连
-        initialSlide: 1 // 初始化时显示哪一个
+        loop: true // 开启循环首位相连
         // effect: 'flip' // 切换效果
       },
       swiperYearOption: {
         observer: true,
         autoHeight: false, // 高度随内容变化
-        loop: true, // 开启循环首位相连
-        initialSlide: 1 // 初始化时显示哪一个
+        loop: true // 开启循环首位相连
         // effect: 'flip' // 切换效果
       },
       currentDate: {}, // 保存当天日期数据
@@ -85,13 +83,14 @@ export default {
       currentYear: 0, // 保存当前展示年份
       selected: 0, // 点击选中index
       selectMonth: 0, // 点击选中月份index
-      weeks: ['日', '一', '二', '三', '四', '五', '六'], // 星期数组
+      weeks: ['一', '二', '三', '四', '五', '六', '日'], // 星期数组
       preMonthArr: [], // 展示月份前一个月数组
       curMonthArr: [], // 当前展示月份数组
       nextMonthArr: [], // 当前展示月份下一个月数组
       months: [], // 合并三个月数据
       years: [], // 合并十二个月数据
-      showYear: false // 控制是否显示一整年的数据
+      showYear: false, // 控制是否显示一整年的数据
+      tempArr: [6, 7, 5]
     }
   },
   components: {
@@ -101,13 +100,11 @@ export default {
   created () {
     // 初始化日历
     this.initCalendar()
-    this.initCalendarYear()
+    // this.initCalendarYear()
   },
   mounted () {
     this.initSwiper() // mounted 初始化滑动
-    this.initYearSwiper()
-  },
-  watch: {
+    // this.initYearSwiper()
   },
   computed: {
     ...mapState(['address'])
@@ -125,11 +122,12 @@ export default {
       this.currentYear = current.getFullYear()
 
       this.curMonthArr = this.getDateModule(this.currentYear, this.currentMonth)
-      if (this.currentMonth === 1) this.preMonthArr = this.getDateModule(this.currentYear - 1, 12)
-      this.preMonthArr = this.getDateModule(this.currentYear, this.currentMonth - 1)
       if (this.currentMonth === 12) this.nextMonthArr = this.getDateModule(this.currentYear + 1, 1)
       this.nextMonthArr = this.getDateModule(this.currentYear, this.currentMonth + 1)
-      this.months = [this.preMonthArr, this.curMonthArr, this.nextMonthArr]
+      if (this.currentMonth === 1) this.preMonthArr = this.getDateModule(this.currentYear - 1, 12)
+      this.preMonthArr = this.getDateModule(this.currentYear, this.currentMonth - 1)
+
+      this.months = [this.curMonthArr, this.nextMonthArr, this.preMonthArr]
       this.selected = this.curMonthArr.indexOf(this.currentDay)
 
       this.currentDate = {
@@ -146,36 +144,35 @@ export default {
       this.nextYearArr = this.getYearModule(this.currentYear + 1)
       this.years = [this.preYearArr, this.curYearArr, this.nextYearArr]
       this.selectMonth = this.currentMonth - 1
-      console.log(this.years)
+      // console.log(this.years)
     },
     // 初始化滑动
     initSwiper () {
-      let monthSwiper = new Swiper('#swiper1', this.swiperOption)
-      monthSwiper.on('slidePrevTransitionEnd', () => {
-        if (this.currentMonth === 1) {
-          this.currentMonth = 12
-          this.currentYear--
-          this.getDateModule(this.currentYear, this.currentMonth)
-        } else {
-          this.currentMonth--
-        }
-        if (this.currentMonth === 2) this.preMonthArr = this.getDateModule(this.currentYear - 1, 12)
-        this.curMonthArr = this.preMonthArr
-        this.nextMonthArr = this.curMonthArr
-        this.preMonthArr = this.getDateModule(this.currentYear, this.currentMonth - 1)
-        // console.log(this.currentMonth)
+      this.monthSwiper = new Swiper('#swiper1', this.swiperOption)
+      this.monthSwiper.on('slidePrevTransitionEnd', () => {
+        this.currentMonth--
+        if (this.monthSwiper.activeIndex === 0) this.tempArr[1] = this.currentMonth - 1
+        if (this.monthSwiper.activeIndex === 2) this.tempArr[0] = this.currentMonth - 1
+        if (this.monthSwiper.activeIndex === 1) this.tempArr[2] = this.currentMonth - 1
+        console.log(`====${this.monthSwiper.activeIndex}:${this.tempArr}`)
       })
-      monthSwiper.on('slideNextTransitionEnd', () => {
-        if (this.currentMonth === 12) {
-          this.currentMonth = 1
-          this.currentYear++
-        } else {
-          this.currentMonth++
-        }
-        if (this.currentMonth === 11) this.nextMonthArr = this.getDateModule(this.currentYear + 1, 1)
-        this.nextMonthArr = this.getDateModule(this.currentYear, this.currentMonth + 1)
-        this.curMonthArr = this.nextMonthArr
-        this.preMonthArr = this.curMonthArr
+      this.monthSwiper.on('slideNextTransitionEnd', () => {
+        this.currentMonth++
+        if (this.monthSwiper.activeIndex === 2) this.tempArr[2] = this.currentMonth + 1
+        if (this.monthSwiper.activeIndex === 3) this.tempArr[0] = this.currentMonth + 1
+        if (this.monthSwiper.activeIndex === 4) this.tempArr[1] = this.currentMonth + 1
+        console.log(`====${this.monthSwiper.activeIndex}:${this.tempArr}`)
+        // if (this.currentMonth === 12) {
+        //   this.currentMonth = 1
+        //   this.currentYear++
+        // } else {
+        //   this.currentMonth++
+        // }
+        // if (this.currentMonth === 11) this.nextMonthArr = this.getDateModule(this.currentYear + 1, 1)
+        // this.nextMonthArr = this.getDateModule(this.currentYear, this.currentMonth + 1)
+        // this.curMonthArr = this.nextMonthArr
+        // this.preMonthArr = this.curMonthArr
+        // this.months = [this.preMonthArr, this.curMonthArr, this.nextMonthArr]
         // console.log(this.currentMonth)
       })
     },
@@ -201,8 +198,10 @@ export default {
       let dateModule = new Date(year, month, 0) // 设置日期为下个月第零天
       let days = dateModule.getDate() // 通过getDate()获取当前月份第零天在上个月的月末以此得到上个月的总天数
       let whichDay = new Date(year, month - 1, 1).getDay() // getDay 获取第一天在星期几
+
       let curMonthDays = []
       // 月份前面补空数据
+      if (whichDay === 0) whichDay = 7
       for (let i = 1; i < whichDay; i++) {
         curMonthDays.push('')
       }
@@ -210,6 +209,9 @@ export default {
       for (let i = 1; i <= days; i++) {
         curMonthDays.push(i)
       }
+      // console.log('============year========', year, month)
+      // console.log('================whichDay=========', whichDay)
+      // console.log('===============this.curMonthDays=====', curMonthDays)
       return curMonthDays
     },
     getYearModule (year) {
@@ -221,6 +223,25 @@ export default {
         tempArr.push(obj)
       }
       return tempArr
+    },
+    handlePreSlide (index) {
+      if (index === 0) {
+
+      }
+      if (this.currentMonth === 1) {
+        this.currentMonth = 12
+        this.currentYear--
+        this.getDateModule(this.currentYear, this.currentMonth)
+      } else {
+        this.currentMonth--
+      }
+      if (this.currentMonth === 2) this.preMonthArr = this.getDateModule(this.currentYear - 1, 12)
+
+      this.curMonthArr = this.preMonthArr
+      this.nextMonthArr = this.curMonthArr
+      this.preMonthArr = this.getDateModule(this.currentYear, this.currentMonth - 1)
+      this.months = [this.preMonthArr, this.curMonthArr, this.nextMonthArr]
+      // console.log(this.currentMonth)
     }
   }
 }
