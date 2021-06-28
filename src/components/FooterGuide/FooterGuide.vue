@@ -24,6 +24,12 @@
       </span>
       <span>用户</span>
     </a>
+    <a class="guide_item" :class="{on: '/calendar'===$route.path}" @click="goto('/calendar')">
+      <span class="item_icon">
+        <i class="iconfont icon-waimai"></i>
+      </span>
+      <span>日历</span>
+    </a>
   </div>
 </template>
 
