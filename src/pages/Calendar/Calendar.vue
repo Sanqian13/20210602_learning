@@ -15,15 +15,16 @@
       </ul>
       <div class="swiper-container" id="swiper1" v-if="months.length && !showYear">
         <div class="swiper-wrapper">
-          <div class="swiper-slide" v-for="(month, index) in months" :key="index">
-            <div class="day" v-for="(day, index) in month"
+          <div class="swiper-slide" v-for="(month, index) in tempArr" :key="index">
+            {{month}}
+            <!-- <div class="day" v-for="(day, index) in month"
               :key="index"
               @click="selectDay(index)"
               :class="{
                 'on': index === selected,
                 'current-day': (currentDate.year === currentYear && currentDate.month === currentMonth && index === currentDate.index && index !== selected)}">
               {{day}}
-            </div>
+            </div> -->
           </div>
         </div>
       </div>
@@ -151,16 +152,16 @@ export default {
       this.monthSwiper = new Swiper('#swiper1', this.swiperOption)
       this.monthSwiper.on('slidePrevTransitionEnd', () => {
         this.currentMonth--
-        if (this.monthSwiper.activeIndex === 0) this.tempArr[1] = this.currentMonth - 1
         if (this.monthSwiper.activeIndex === 2) this.tempArr[0] = this.currentMonth - 1
         if (this.monthSwiper.activeIndex === 1) this.tempArr[2] = this.currentMonth - 1
+        if (this.monthSwiper.activeIndex === 1) this.monthSwiper.slideToLoop(2)
         console.log(`====${this.monthSwiper.activeIndex}:${this.tempArr}`)
       })
-      this.monthSwiper.on('slideNextTransitionEnd', () => {
+      this.monthSwiper.on('slideNextTransitionStart', () => {
         this.currentMonth++
         if (this.monthSwiper.activeIndex === 2) this.tempArr[2] = this.currentMonth + 1
         if (this.monthSwiper.activeIndex === 3) this.tempArr[0] = this.currentMonth + 1
-        if (this.monthSwiper.activeIndex === 4) this.tempArr[1] = this.currentMonth + 1
+        if (this.monthSwiper.activeIndex === 3) this.monthSwiper.slideToLoop(0)
         console.log(`====${this.monthSwiper.activeIndex}:${this.tempArr}`)
         // if (this.currentMonth === 12) {
         //   this.currentMonth = 1

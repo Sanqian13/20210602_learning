@@ -24,7 +24,7 @@
       </span>
       <span>用户</span>
     </a>
-    <a class="guide_item" :class="{on: '/calendar'===$route.path}" @click="goto('/calendar')">
+    <a class="guide_item" :class="{on: '/week'===$route.path}" @click="goto('/week')">
       <span class="item_icon">
         <i class="iconfont icon-waimai"></i>
       </span>
