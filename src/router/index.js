@@ -6,6 +6,7 @@ import Order from '../pages/Order/Order'
 import Profile from '../pages/Profile/Profile'
 import Login from '../pages/Login/Login'
 import Calendar from '../pages/Calendar/Calendar'
+import Week from '../pages/Week/Week'
 
 Vue.use(VueRouter)
 
@@ -56,6 +57,11 @@ export default new VueRouter({
       path: '/calendar',
       name: 'Calendar',
       component: Calendar
+    },
+    {
+      path: '/week',
+      name: 'Week',
+      component: Week
     }
   ]
 })
