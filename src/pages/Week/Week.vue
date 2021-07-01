@@ -4,8 +4,8 @@
     <div class="headerTitle">
       <div class="title">{{showYear ? currentYear+'年' : currentYear+'年'+currentMonth+'月'}}</div>
       <ul class="menu">
-          <li :class="{'on': showYear}" @click="showYear = true">年份</li>
-          <li :class="{'on': !showYear}" @click="showYear = false">月份</li>
+          <li :class="{'on': showYear}" @click="changeCalendar">年份</li>
+          <li :class="{'on': !showYear}" @click="changeCalendar">月份</li>
           <li>具体</li>
       </ul>
     </div>
@@ -31,7 +31,7 @@
               @click="selectDay(index)"
               :class="{
                 'on': index === selected,
-                'current-day': (currentDate.year === currentYear && currentDate.month === currentMonth && index === currentDate.index && index !== selected)}">
+                'current-day': (onDayClass && index === currentDate.index && index !== selected)}">
               {{day}}
             </div>
           </div>
@@ -172,18 +172,6 @@ import { mapState } from 'vuex'
 export default {
   data () {
     return {
-      swiperOption: {
-        observer: true,
-        autoHeight: true, // 高度随内容变化
-        loop: true // 开启循环首位相连
-        // effect: 'flip' // 切换效果
-      },
-      swiperYearOption: {
-        observer: true,
-        autoHeight: false, // 高度随内容变化
-        loop: true // 开启循环首位相连
-        // effect: 'flip' // 切换效果
-      },
       startClientX: 0, // 移动横坐标
       transformX: 0, // 初始transform开始位置坐标
       screenWidth: 0,
@@ -199,8 +187,7 @@ export default {
       nextMonthArr: [], // 当前展示月份下一个月数组
       months: [], // 合并三个月数据
       years: [], // 合并十二个月数据
-      showYear: false, // 控制是否显示一整年的数据
-      tempArr: [6, 7, 5]
+      showYear: false // 控制是否显示一整年的数据
     }
   },
   components: {
@@ -218,12 +205,36 @@ export default {
     this.screenWidth = window.screen.width
   },
   computed: {
-    ...mapState(['address'])
+    ...mapState(['address']),
+    onDayClass: function () {
+      if (this.currentDate.year === this.currentYear && this.currentDate.month === this.currentMonth) return true
+      return false
+    }
+  },
+  watch: {
+    showYear (value) {
+      if (!value) {
+        this.$nextTick(() => {
+          let dom = document.getElementById('calendar_content')
+          dom.style.transform = `translate3d(0px, 0px, 0px)`
+          this.initCalendar()
+        })
+      } else {
+        this.$nextTick(() => {
+          let dom = document.getElementById('calendar_year_content')
+          dom.style.transform = `translate3d(0px, 0px, 0px)`
+          this.initCalendarYear()
+        })
+      }
+    }
   },
   methods: {
     // 选择日期点击事件
     selectDay (index) {
       this.selected = index
+    },
+    changeCalendar () {
+      this.showYear = !this.showYear // 取反
     },
     // 初始化日历数据
     initCalendar () {
@@ -331,8 +342,10 @@ export default {
     handleStart (e) {
       this.startClientX = e.changedTouches[0].clientX
     },
+    // 滑动中
     handleMove (e) {
       e.preventDefault()
+      this.selected = 40
       let dom = document.getElementById('calendar_content')
       dom.style['transition-duration'] = '0ms'
       dom.style.transform = `translate3d(${(this.transformX + e.changedTouches[0].clientX - this.startClientX)}px, 0px, 0px)`
@@ -345,12 +358,16 @@ export default {
       let dom = document.getElementById('calendar_content')
       if (Math.abs(diffX) > (screenWidth / 3)) {
         console.log('============================切换================')
+        const startX = this.transformX
+        const endX = diffX > 0 ? this.transformX + screenWidth : this.transformX - screenWidth
+        // dom.style.transition = 'all 0.3s'
         let animation = dom.animate([
-          {transform: `translate3d(${diffX}px, 0px, 0px)`},
-          {transform: `translate3d(${diffX < 0 ? -414 : 414}px, 0px, 0px)`}
+          {transform: `translate3d(${diffX + startX}px, 0px, 0px)`},
+          {transform: `translate3d(${endX}px, 0px, 0px)`}
         ], {
-          duration: 300,
-          ddelay: 0
+          duration: 200,
+          delay: 0
+          // fill: 'forwards'
         })
         animation.play()
         if (diffX > 0) {
@@ -361,6 +378,15 @@ export default {
           this.handleNextSlide(this.currentMonth, this.transformX)
         }
         setTimeout(() => {
+          const indexObj = {
+            [screenWidth]: 0,
+            0: 1,
+            [-screenWidth]: 2,
+            [2 * screenWidth]: 2,
+            [-2 * screenWidth]: 0
+          }
+          const currentArray = indexObj[`${endX}`]
+          this.selected = this.months[`${currentArray}`].indexOf(1)
           if (diffX > 0) {
             dom.style.transform = `translate3d(${this.transformX}px, 0px, 0px)`
             console.log('=======slide prev success this.transformX=====', this.transformX)
@@ -368,9 +394,9 @@ export default {
             dom.style.transform = `translate3d(${this.transformX}px, 0px, 0px)`
             console.log('=======slide next success this.transformX=====', this.transformX)
           }
-        }, 300)
+        }, 201)
       } else if (diffX !== 0) {
-        this.goBack(dom, diffX, this.transformX)
+        this.slideBack(dom, diffX, this.transformX)
       }
     },
     handlePreYearSlide (transformX) {
@@ -418,12 +444,15 @@ export default {
       let dom = document.getElementById('calendar_year_content')
       if (Math.abs(diffX) > (screenWidth / 3)) {
         console.log('============================切换================')
+        const startX = this.transformX
+        const endX = diffX > 0 ? this.transformX + screenWidth : this.transformX - screenWidth
         let animation = dom.animate([
-          {transform: `translate3d(${diffX}px, 0px, 0px)`},
-          {transform: `translate3d(${diffX < 0 ? -(this.screenWidth) : screenWidth}px, 0px, 0px)`}
+          {transform: `translate3d(${startX + diffX}px, 0px, 0px)`},
+          {transform: `translate3d(${endX}px, 0px, 0px)`}
         ], {
-          duration: 300,
-          ddelay: 0
+          duration: 200,
+          delay: 0
+
         })
         animation.play()
         if (diffX > 0) {
@@ -441,13 +470,13 @@ export default {
             dom.style.transform = `translate3d(${this.transformX}px, 0px, 0px)`
             console.log('=======slide next success this.transformX=====', this.transformX)
           }
-        }, 300)
+        }, 201)
       } else if (diffX !== 0) {
-        this.goBack(dom, diffX, this.transformX)
+        this.slideBack(dom, diffX, this.transformX)
       }
     },
     // 移动不到一半回弹到原处
-    goBack (dom, diffX, startX) {
+    slideBack (dom, diffX, startX) {
       let animation = dom.animate([
         {transform: `translate3d(${startX + diffX}px, 0px, 0px)`},
         {transform: `translate3d(${startX}px, 0px, 0px)`}
@@ -496,6 +525,7 @@ export default {
         &.on
           color red
   .calendar-month
+    overflow hidden
     .date
       margin 0 20px
       display flex
@@ -524,8 +554,8 @@ export default {
         &.next
           right 0
         .month-wrap
+          width 100%
           display flex
-          // justify-content center
           align-items center
           flex-wrap wrap
           .day-wrap
@@ -539,6 +569,7 @@ export default {
             &.current-day
               color red
   .calendar-year
+    overflow hidden
     .calendar_year_content
       position relative
       width 500%
@@ -546,6 +577,7 @@ export default {
       right -200%
       display flex
       .calendar_year_wrapper
+        width 100%
         height auto
         flex 1
         display flex
