@@ -9,7 +9,8 @@
           <li>具体</li>
       </ul>
     </div>
-    <div class="calendar-month" v-if="!showYear">
+    <transition>
+    <div class="calendar-month" v-show="!showYear">
       <ul class="date">
         <li class="day" v-for="(week, index) in weeks" :key="index">{{week}}</li>
       </ul>
@@ -71,7 +72,9 @@
         </div>
       </div>
     </div>
-    <div class="calendar-year" v-if="showYear">
+    </transition>
+    <transition>
+    <div class="calendar-year" v-show="showYear">
       <div class="calendar_year_content" id="calendar_year_content" v-if="years.length && showYear" @touchstart="handleStart" @touchmove="handleYearMove" @touchend="handleYearEnd">
           <div class="calendar_year_wrapper prev_duplicate">
             <div class="month"
@@ -160,6 +163,7 @@
           </div>
       </div>
     </div>
+    </transition>
     <FooterGuide/>
   </section>
 
